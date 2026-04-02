@@ -1,6 +1,6 @@
 
-import { GoogleGenAI, Chat } from "@google/genai";
-import type { ChatMessage, GroundingSource } from '../types';
+import { GoogleGenAI, Chat, Schema, Type } from "@google/genai";
+import type { ChatMessage, GroundingSource, Plan } from '../types';
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set");
@@ -8,38 +8,34 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const planGenerationModel = 'gemini-2.5-pro';
-const chatModel = 'gemini-2.5-flash';
+const planGenerationModel = 'gemini-3-pro-preview';
+const chatModel = 'gemini-3-flash-preview';
 
 let chat: Chat | null = null;
 
-export const generateAutomationPlan = async (businessDescription: string): Promise<{ planText: string, sources: GroundingSource[] }> => {
+// Esquema de respuesta JSON estricto
+const planSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+        analysis: { type: Type.STRING, description: "Contenido detallado para Análisis de Procesos Manuales en Markdown." },
+        flows: { type: Type.STRING, description: "Contenido detallado para Diseño de Flujos de Agentes en Markdown." },
+        stack: { type: Type.STRING, description: "Contenido detallado para Stack Tecnológico Recomendado en Markdown. AQUÍ es donde debes mencionar herramientas como Vapi, OpenAI, Make, etc." },
+        implementation: { type: Type.STRING, description: "Contenido detallado para Implementación Paso a Paso en Markdown." },
+        roi: { type: Type.STRING, description: "Contenido detallado para ROI Estimado en Markdown. IMPORTANTE: Céntrate ÚNICAMENTE en métricas financieras, % de ahorro de tiempo y reducción de costes. NO menciones características técnicas, nombres de modelos de IA (Vapi/OpenAI) ni funcionalidades de la interfaz en esta sección." },
+    },
+    required: ["analysis", "flows", "stack", "implementation", "roi"],
+};
+
+export const generateAutomationPlan = async (businessDescription: string): Promise<{ planData: any, sources: GroundingSource[] }> => {
     const prompt = `
-Eres un experto consultor en automatización de clase mundial. Tu tarea es analizar una descripción de negocio y crear un plan de automatización detallado y accionable.
+Eres un experto consultor en automatización de clase mundial.
+Analiza esta descripción de negocio: "${businessDescription}"
 
-Basado en la siguiente descripción de negocio, crea un plan de automatización completo.
-
-### Descripción del negocio:
-"${businessDescription}"
-
-### El plan debe incluir los siguientes cinco puntos, usando exactamente estos encabezados en formato markdown ###:
-
-### 1. Análisis de Procesos Manuales
-Identifica los procesos clave que son repetitivos, propensos a errores o que consumen mucho tiempo y que son candidatos ideales para la automatización. Sé específico y da ejemplos concretos relacionados con el negocio.
-
-### 2. Diseño de Flujos de Agentes
-Propón flujos de trabajo automatizados (agentes) para los procesos identificados. Describe paso a paso cómo operarían estos agentes y cómo interactuarían entre sí o con los humanos.
-
-### 3. Stack Tecnológico Recomendado
-Sugiere un conjunto de herramientas y tecnologías (software, plataformas, APIs) para construir e implementar las automatizaciones. Justifica tus elecciones basándote en la escalabilidad, coste y facilidad de uso para el negocio descrito. Utiliza información actualizada de la web.
-
-### 4. Implementación Paso a Paso
-Proporciona una hoja de ruta clara para la implementación, dividida en fases o hitos (ej. Fase 1: Automatización de la comunicación con clientes, Fase 2: Optimización de la gestión de proyectos, etc.).
-
-### 5. ROI Estimado
-Ofrece un análisis del retorno de la inversión esperado. Considera ahorros de costos (horas de trabajo, reducción de errores), aumento de eficiencia, y otros beneficios cualitativos como la mejora en la satisfacción del cliente. Proporciona una estimación cuantitativa si es posible (ej. "ahorro de X horas/semana").
-
-Utiliza información actualizada y precisa de la web para el stack tecnológico y las mejores prácticas de implementación. Sé claro, conciso y profesional.
+Genera un plan de automatización completo. 
+IMPORTANTE:
+1. Usa formato Markdown dentro de los campos JSON para listas, negritas, etc.
+2. SECCIÓN ROI: Esta sección es CRÍTICA. Debes hablar SOLO de números, retorno de inversión y ahorro. PROHIBIDO mencionar tecnologías (como "Mejor interfaz", "Vapi", "OpenAI") en la sección de ROI. Esos detalles van en la sección de Stack.
+3. Utiliza Google Search para fundamentar tus recomendaciones.
 `;
 
     try {
@@ -47,47 +43,51 @@ Utiliza información actualizada y precisa de la web para el stack tecnológico 
             model: planGenerationModel,
             contents: prompt,
             config: {
-                thinkingConfig: { thinkingBudget: 32768 },
+                responseMimeType: "application/json",
+                responseSchema: planSchema,
+                thinkingConfig: { thinkingBudget: 1024 }, // Thinking reducido para priorizar formato
                 tools: [{ googleSearch: {} }],
             },
         });
 
-        const planText = response.text;
+        const jsonText = response.text || "{}";
+        const planData = JSON.parse(jsonText);
         
         const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
         const sources: GroundingSource[] = groundingChunks
             .map((chunk: any) => ({
                 uri: chunk.web?.uri || '',
-                title: chunk.web?.title || 'Fuente sin título'
+                title: chunk.web?.title || 'Fuente de información'
             }))
             .filter((source: GroundingSource) => source.uri);
         
-        return { planText, sources };
+        return { planData, sources };
     } catch (error) {
         console.error("Gemini API Error (generateAutomationPlan):", error);
-        throw new Error("Failed to generate automation plan from Gemini API.");
+        throw new Error("Error al conectar con la IA de Gemini.");
     }
 };
 
-
 export const chatWithBot = async (history: ChatMessage[], newMessage: string): Promise<string> => {
-    if (!chat) {
-        chat = ai.chats.create({
-            model: chatModel,
-            history: history.map(msg => ({
-                role: msg.role,
-                parts: [{ text: msg.content }]
-            })),
-        });
-    }
-
     try {
+        if (!chat) {
+            chat = ai.chats.create({
+                model: chatModel,
+                config: {
+                    systemInstruction: 'Eres un asistente experto en automatización de procesos empresariales. Responde de forma concisa y profesional.',
+                },
+                history: history.map(msg => ({
+                    role: msg.role,
+                    parts: [{ text: msg.content }]
+                })),
+            });
+        }
+
         const response = await chat.sendMessage({ message: newMessage });
-        return response.text;
+        return response.text || "No pude generar una respuesta.";
     } catch (error) {
         console.error("Gemini API Error (chatWithBot):", error);
-        // Reset chat on error
-        chat = null;
-        throw new Error("Failed to get chat response from Gemini API.");
+        chat = null; 
+        throw new Error("Error en la comunicación del chat.");
     }
 };

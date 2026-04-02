@@ -1,5 +1,7 @@
 {
-  "name": "Asistente de Automatización de Negocios",
+  "name": "Automation Intelligence Hub",
   "description": "Una aplicación web que genera planes de automatización completos para negocios utilizando la IA de Gemini. Incluye análisis de procesos, diseño de flujos, recomendaciones tecnológicas, planes de implementación y estimaciones de ROI.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

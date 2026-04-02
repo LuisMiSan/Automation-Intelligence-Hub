@@ -1,11 +1,33 @@
+
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Asistente de Automatización de Negocios</title>
+    <title>AI Automation Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        /* Eliminado overflow: hidden para permitir scroll natural si falla el contenedor flex */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 <script type="importmap">
 {
   "imports": {
@@ -13,13 +35,13 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "jspdf": "https://esm.sh/jspdf@2.5.1"
+    "jspdf": "https://esm.sh/jspdf@2.5.2"
   }
 }
 </script>
 </head>
-<body class="bg-gray-900 text-white">
-    <div id="root"></div>
+<body class="bg-gray-950 text-white antialiased">
+    <div id="root" class="h-full"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

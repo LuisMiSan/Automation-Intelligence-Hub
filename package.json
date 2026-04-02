@@ -1,5 +1,5 @@
 {
-  "name": "asistente-de-automatización-de-negocios",
+  "name": "automation-intelligence-hub",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,6 +13,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "jspdf": "3.0.2"
+    "jspdf": "2.5.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
@@ -21,3 +22,4 @@
     "vite": "^6.2.0"
   }
 }
+ 
