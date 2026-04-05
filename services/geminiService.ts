@@ -1,55 +1,73 @@
 
-import { GoogleGenAI, Chat, Schema, Type } from "@google/genai";
+import { GoogleGenAI, Chat, Schema, Type, ThinkingLevel } from "@google/genai";
 import type { ChatMessage, GroundingSource, Plan } from '../types';
 
-if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set");
+const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+
+if (!apiKey || apiKey === 'undefined') {
+    throw new Error("GEMINI_API_KEY environment variable not set");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey });
 
-const planGenerationModel = 'gemini-3-pro-preview';
+const planGenerationModel = 'gemini-3-flash-preview';
 const chatModel = 'gemini-3-flash-preview';
 
 let chat: Chat | null = null;
 
-// Esquema de respuesta JSON estricto
+// Esquema de respuesta JSON estricto y amigable
 const planSchema: Schema = {
     type: Type.OBJECT,
     properties: {
-        analysis: { type: Type.STRING, description: "Contenido detallado para Análisis de Procesos Manuales en Markdown." },
-        flows: { type: Type.STRING, description: "Contenido detallado para Diseño de Flujos de Agentes en Markdown." },
-        stack: { type: Type.STRING, description: "Contenido detallado para Stack Tecnológico Recomendado en Markdown. AQUÍ es donde debes mencionar herramientas como Vapi, OpenAI, Make, etc." },
-        implementation: { type: Type.STRING, description: "Contenido detallado para Implementación Paso a Paso en Markdown." },
-        roi: { type: Type.STRING, description: "Contenido detallado para ROI Estimado en Markdown. IMPORTANTE: Céntrate ÚNICAMENTE en métricas financieras, % de ahorro de tiempo y reducción de costes. NO menciones características técnicas, nombres de modelos de IA (Vapi/OpenAI) ni funcionalidades de la interfaz en esta sección." },
+        analysis: { type: Type.STRING, description: "Oportunidades de Mejora. Lenguaje sencillo, ahorro de tiempo y reducción de errores." },
+        flows: { type: Type.STRING, description: "Cómo Funcionará tu Asistente Inteligente. Describe el proceso como un empleado digital." },
+        stack: { type: Type.STRING, description: "Tus Herramientas de Trabajo. Qué son y para qué sirven (ej: Make, OpenAI)." },
+        implementation: { type: Type.STRING, description: "Tu Camino al Éxito (Pasos a Seguir). Plan de acción por etapas." },
+        timeline: { type: Type.STRING, description: "Tiempos Estimados. Realista, en semanas o meses." },
+        roi: { type: Type.STRING, description: "Beneficios para tu Negocio. Libertad, crecimiento y tranquilidad." },
+        skills: { type: Type.STRING, description: "Tus Nuevas Habilidades Agénticas (Skills). Capacidades específicas que tendrá tu IA." },
+        skillConfig: { type: Type.STRING, description: "Configuración JSON de la Skill. Objeto JSON con name, description, tools, input_schema y output_schema." },
     },
-    required: ["analysis", "flows", "stack", "implementation", "roi"],
+    required: ["analysis", "flows", "stack", "implementation", "timeline", "roi", "skills", "skillConfig"],
 };
 
 export const generateAutomationPlan = async (businessDescription: string): Promise<{ planData: any, sources: GroundingSource[] }> => {
     const prompt = `
-Eres un experto consultor en automatización de clase mundial.
-Analiza esta descripción de negocio: "${businessDescription}"
+Eres un Consultor de Estrategia de IA Humano, Cercano y Altamente Experto. 
+Tu misión es explicarle a un dueño de negocio cómo la Inteligencia Artificial Agéntica puede transformar su vida y su empresa.
 
-Genera un plan de automatización completo. 
-IMPORTANTE:
-1. Usa formato Markdown dentro de los campos JSON para listas, negritas, etc.
-2. SECCIÓN ROI: Esta sección es CRÍTICA. Debes hablar SOLO de números, retorno de inversión y ahorro. PROHIBIDO mencionar tecnologías (como "Mejor interfaz", "Vapi", "OpenAI") en la sección de ROI. Esos detalles van en la sección de Stack.
-3. Utiliza Google Search para fundamentar tus recomendaciones.
+Descripción del negocio: "${businessDescription}"
+
+REGLAS DE ORO:
+1. LENGUAJE HUMANO: Habla de tú a tú. Analogías sencillas.
+2. ENFOQUE EN EL BENEFICIO: Cómo esto trae paz y orden.
+3. EXPLICACIÓN DE HERRAMIENTAS: Qué hace cada herramienta por el usuario.
+4. ESTRUCTURA CLARA: Listas y negritas.
+5. SKILLS VS PROMPTS: Explica que creamos capacidades, no solo instrucciones.
+6. CONFIGURACIÓN TÉCNICA: En 'skillConfig', genera un JSON puro en formato string que defina la habilidad principal.
+
+RESPONDE EXCLUSIVAMENTE EN FORMATO JSON con estas llaves:
+- analysis: Oportunidades de mejora.
+- flows: Diseño de flujos.
+- stack: Herramientas recomendadas.
+- implementation: Pasos a seguir.
+- timeline: Tiempos estimados.
+- roi: Beneficios y retorno.
+- skills: Descripción de habilidades agénticas.
+- skillConfig: JSON técnico de la habilidad principal.
 `;
 
     try {
+        console.log("Iniciando generación de plan con Gemini...");
         const response = await ai.models.generateContent({
             model: planGenerationModel,
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
-                responseSchema: planSchema,
-                thinkingConfig: { thinkingBudget: 1024 }, // Thinking reducido para priorizar formato
-                tools: [{ googleSearch: {} }],
             },
         });
 
+        console.log("Respuesta recibida de Gemini");
         const jsonText = response.text || "{}";
         const planData = JSON.parse(jsonText);
         
@@ -74,7 +92,7 @@ export const chatWithBot = async (history: ChatMessage[], newMessage: string): P
             chat = ai.chats.create({
                 model: chatModel,
                 config: {
-                    systemInstruction: 'Eres un asistente experto en automatización de procesos empresariales. Responde de forma concisa y profesional.',
+                    systemInstruction: 'Eres un Arquitecto Senior de Sistemas Agénticos. Tu especialidad es diseñar flujos de trabajo autónomos, orquestación multi-agente y despliegue de IA generativa aplicada a procesos de negocio. Responde de forma técnica pero accesible, siempre priorizando soluciones agénticas sobre herramientas aisladas.',
                 },
                 history: history.map(msg => ({
                     role: msg.role,
