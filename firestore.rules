@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             (request.auth.token.email == "luismigsm@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidLead(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.company is string && data.company.size() > 0 && data.company.size() < 100 &&
+             data.businessDescription is string && data.businessDescription.size() > 0 &&
+             data.status in ['new', 'contacted', 'negotiating', 'closed', 'lost'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /leads/{leadId} {
+      // Anyone can create a lead to use the tool
+      allow create: if isValidLead(request.resource.data);
+      
+      // Only admin can read or update leads
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

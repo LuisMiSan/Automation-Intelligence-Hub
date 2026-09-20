@@ -11,7 +11,9 @@ import {
     SearchIcon,
     PencilIcon,
     CheckIcon,
-    LayoutIcon
+    LayoutIcon,
+    BrainIcon,
+    CodeIcon
 } from './icons';
 
 interface AutomationPlanProps {
@@ -21,6 +23,7 @@ interface AutomationPlanProps {
     refs: any;
     onUpdateSection: (sectionKey: keyof Plan, newContent: string) => void;
     businessDescription: string;
+    showNotification: (message: string, type?: 'success' | 'error') => void;
 }
 
 const Card: React.FC<{ 
@@ -87,11 +90,32 @@ const Card: React.FC<{
                         <p className="text-sm italic">Pendiente de generación...</p>
                     </div>
                 ) : isEditing ? (
-                    <textarea
-                        value={editedContent}
-                        onChange={(e) => setEditedContent(e.target.value)}
-                        className="w-full h-96 bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-gray-300 font-mono text-sm leading-relaxed focus:ring-2 focus:ring-cyan-500/30 outline-none resize-y"
-                    />
+                    <div className="space-y-4">
+                        <textarea
+                            value={editedContent}
+                            onChange={(e) => setEditedContent(e.target.value)}
+                            className="w-full h-96 bg-gray-950/50 border border-gray-800 rounded-xl p-5 text-gray-300 font-mono text-sm leading-relaxed focus:ring-2 focus:ring-cyan-500/30 border-cyan-500/20 outline-none resize-y transition-all"
+                            placeholder="Edita el contenido de esta sección..."
+                        />
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    setEditedContent(content);
+                                }}
+                                className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-cyan-900/20"
+                            >
+                                <CheckIcon className="w-4 h-4" />
+                                Guardar cambios
+                            </button>
+                        </div>
+                    </div>
                 ) : content ? (
                     <div className="prose prose-invert max-w-none prose-p:text-gray-400 prose-p:leading-relaxed prose-li:text-gray-400 prose-strong:text-cyan-400">
                         {content.split('\n').map((paragraph, index) => {
@@ -124,7 +148,8 @@ export const AutomationPlan: React.FC<AutomationPlanProps> = ({
     isLoading, 
     refs, 
     onUpdateSection,
-    businessDescription
+    businessDescription,
+    showNotification
 }) => {
     const sanitizeUrl = (url: string | undefined | null): string | null => {
         if (!url || typeof url !== 'string') return null;
@@ -199,6 +224,44 @@ export const AutomationPlan: React.FC<AutomationPlanProps> = ({
                     isLoading={isLoading && !plan}
                     onSaveContent={(c) => onUpdateSection('roi', c)}
                 />
+
+                <Card 
+                    idRef={refs.skills}
+                    title="6. Tus Nuevas Habilidades (Skills)" 
+                    content={plan?.skills.content || ''} 
+                    icon={<BrainIcon />} 
+                    isLoading={isLoading && !plan}
+                    onSaveContent={(c) => onUpdateSection('skills', c)}
+                    variant="highlight"
+                />
+
+                {plan?.skillConfig && (
+                    <div ref={refs.json} className="bg-gray-900/60 rounded-2xl border border-blue-500/30 shadow-2xl overflow-hidden backdrop-blur-md">
+                        <div className="border-b border-blue-500/20 px-6 py-4 bg-blue-500/10 flex items-center justify-between">
+                            <h3 className="text-lg font-bold flex items-center gap-3 text-blue-200">
+                                <span className="text-blue-400 bg-blue-400/10 p-2 rounded-lg"><CodeIcon /></span>
+                                Configuración Técnica (JSON Skill)
+                            </h3>
+                            <button 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(plan.skillConfig || '');
+                                    showNotification('¡JSON copiado al portapapeles!');
+                                }}
+                                className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold transition-all"
+                            >
+                                Copiar JSON
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <pre className="bg-black/40 p-5 rounded-xl border border-gray-800 text-cyan-400 font-mono text-xs overflow-x-auto leading-relaxed max-h-96 custom-scrollbar">
+                                {plan.skillConfig}
+                            </pre>
+                            <p className="mt-4 text-xs text-gray-500 italic">
+                                * Este archivo JSON define la estructura técnica de la habilidad para ser importada en plataformas de agentes.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <div ref={refs.sources} className="bg-gray-800/40 rounded-2xl border border-gray-800 shadow-xl overflow-hidden backdrop-blur-sm">
                     <div className="border-b border-gray-800 px-6 py-4 bg-gray-800/20">
