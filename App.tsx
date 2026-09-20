@@ -453,6 +453,7 @@ const App: React.FC = () => {
             setActiveTab('audit');
 
             // Save to Firestore as a Lead
+            let leadSaved = false;
             try {
                 await addDoc(collection(db, 'leads'), {
                     ...leadData,
@@ -464,13 +465,19 @@ const App: React.FC = () => {
                     status: 'new',
                     notes: ''
                 });
+                leadSaved = true;
             } catch (leadErr) {
                 console.error("Error saving lead (non-critical):", leadErr);
-                // We don't use handleFirestoreError here to avoid crashing the whole app 
+                // We don't use handleFirestoreError here to avoid crashing the whole app
                 // if a lead fails to save (user still gets their plan)
             }
 
-            showNotification("¡Auditoría generada y contacto guardado!");
+            showNotification(
+                leadSaved
+                    ? "¡Auditoría generada y contacto guardado!"
+                    : "Auditoría generada. No se pudo guardar el contacto.",
+                leadSaved ? 'success' : 'error'
+            );
         } catch (err) {
             console.error("Error generating plan:", err);
             setError("Hubo un error al generar el plan. Por favor, inténtalo de nuevo.");
