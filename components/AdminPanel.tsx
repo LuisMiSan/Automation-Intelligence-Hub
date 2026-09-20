@@ -13,7 +13,9 @@ import {
     UploadIcon,
     TrashIcon,
     DownloadIcon,
-    CheckIcon
+    CheckIcon,
+    BrainIcon,
+    CodeIcon
 } from './icons';
 import type { SavedPlan } from '../types';
 
@@ -51,6 +53,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         { id: 'stack', label: 'Stack Tecnológico', icon: <StackIcon /> },
         { id: 'implementation', label: 'Implementación', icon: <RocketIcon /> },
         { id: 'roi', label: 'ROI Estimado', icon: <StatsIcon /> },
+        { id: 'skills', label: 'Habilidades (Skills)', icon: <BrainIcon /> },
+        { id: 'json', label: 'Configuración JSON', icon: <CodeIcon /> },
         { id: 'sources', label: 'Fuentes de Datos', icon: <SearchIcon /> },
     ];
 

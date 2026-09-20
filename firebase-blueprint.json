@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "A potential customer who generated an automation audit.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the lead" },
+        "email": { "type": "string", "format": "email", "description": "Professional email address" },
+        "company": { "type": "string", "description": "Company name" },
+        "businessDescription": { "type": "string", "description": "The description provided for the audit" },
+        "plan": { "type": "object", "description": "The generated automation plan" },
+        "sources": { "type": "array", "items": { "type": "object" }, "description": "Grounding sources used" },
+        "timestamp": { "type": "number", "description": "Unix timestamp of creation" },
+        "status": { "type": "string", "enum": ["new", "contacted", "negotiating", "closed", "lost"], "description": "Current status in the sales pipeline" },
+        "notes": { "type": "string", "description": "Internal notes about the lead" }
+      },
+      "required": ["name", "email", "company", "businessDescription", "plan", "timestamp", "status"]
+    }
+  },
+  "firestore": {
+    "leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of leads captured through the audit tool."
+    }
+  }
+}

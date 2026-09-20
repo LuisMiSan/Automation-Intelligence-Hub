@@ -4,13 +4,16 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { SparklesIcon, LayoutIcon, MicrophoneIcon } from './icons';
 
 interface BusinessInputProps {
-    onGenerate: (description: string) => void;
+    onGenerate: (description: string, leadData: { name: string, email: string, company: string }) => void;
     isLoading: boolean;
     initialValue?: string;
 }
 
 export const BusinessInput: React.FC<BusinessInputProps> = ({ onGenerate, isLoading, initialValue = '' }) => {
     const [description, setDescription] = useState<string>(initialValue);
+    const [name, setName] = useState<string>('');
+    const [email, setEmail] = useState<string>('');
+    const [company, setCompany] = useState<string>('');
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<any>(null);
 
@@ -64,7 +67,11 @@ export const BusinessInput: React.FC<BusinessInputProps> = ({ onGenerate, isLoad
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onGenerate(description);
+        if (!name || !email || !company || !description) {
+            alert("Por favor, completa todos los campos.");
+            return;
+        }
+        onGenerate(description, { name, email, company });
     };
 
     return (
@@ -72,7 +79,7 @@ export const BusinessInput: React.FC<BusinessInputProps> = ({ onGenerate, isLoad
             <div className="border-b border-gray-800 px-6 py-4 bg-gray-800/20 flex justify-between items-center">
                 <h3 className="text-lg font-bold flex items-center gap-3 text-white">
                     <span className="text-cyan-500 bg-cyan-500/10 p-2 rounded-lg"><LayoutIcon className="w-5 h-5" /></span>
-                    Describe tu Negocio
+                    Captación de Lead y Auditoría
                 </h3>
                 {isListening && (
                     <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/50 rounded-full animate-pulse">
@@ -82,29 +89,69 @@ export const BusinessInput: React.FC<BusinessInputProps> = ({ onGenerate, isLoad
                 )}
             </div>
             
-            <form onSubmit={handleSubmit} className="p-8">
-                <div className="relative group">
-                    <textarea
-                        id="business-description"
-                        className="w-full h-44 bg-gray-950/50 border border-gray-800 rounded-xl p-5 pr-14 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all duration-300 resize-none text-gray-200 placeholder-gray-600 outline-none"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Escribe o pulsa el micro para describir tu empresa..."
-                        disabled={isLoading}
-                    />
-                    
-                    <button
-                        type="button"
-                        onClick={toggleListening}
-                        className={`absolute top-4 right-4 p-3 rounded-full transition-all duration-300 ${
-                            isListening 
-                            ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-110' 
-                            : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
-                        }`}
-                        title={isListening ? "Detener voz" : "Dictar por voz"}
-                    >
-                        <MicrophoneIcon className={`w-5 h-5 ${isListening ? 'animate-bounce' : ''}`} />
-                    </button>
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Tu Nombre</label>
+                        <input
+                            type="text"
+                            className="w-full bg-gray-950/50 border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all outline-none text-gray-200"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="Ej: Juan Pérez"
+                            required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Profesional</label>
+                        <input
+                            type="email"
+                            className="w-full bg-gray-950/50 border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all outline-none text-gray-200"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Ej: juan@empresa.com"
+                            required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Empresa</label>
+                        <input
+                            type="text"
+                            className="w-full bg-gray-950/50 border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all outline-none text-gray-200"
+                            value={company}
+                            onChange={(e) => setCompany(e.target.value)}
+                            placeholder="Ej: Tech Solutions S.L."
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Descripción del Negocio</label>
+                    <div className="relative group">
+                        <textarea
+                            id="business-description"
+                            className="w-full h-44 bg-gray-950/50 border border-gray-800 rounded-xl p-5 pr-14 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all duration-300 resize-none text-gray-200 placeholder-gray-600 outline-none"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Escribe o pulsa el micro para describir tu empresa..."
+                            disabled={isLoading}
+                            required
+                        />
+                        
+                        <button
+                            type="button"
+                            onClick={toggleListening}
+                            className={`absolute top-4 right-4 p-3 rounded-full transition-all duration-300 ${
+                                isListening 
+                                ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-110' 
+                                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                            }`}
+                            title={isListening ? "Detener voz" : "Dictar por voz"}
+                        >
+                            <MicrophoneIcon className={`w-5 h-5 ${isListening ? 'animate-bounce' : ''}`} />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="mt-6 flex justify-end">
